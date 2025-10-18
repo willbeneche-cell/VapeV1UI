@@ -3,11 +3,6 @@ local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local secondaryFrames = {}
 
--- en haut du fichier
-local function CreateTabFrame(...) ... end
-local function CreateToggle(...) ... end
-local function CreateDropdownToggle(...) ... end
-
 
 
 
@@ -15,9 +10,14 @@ local function CreateDropdownToggle(...) ... end
 
 local HiddenUI = CoreGui:FindFirstChild("HiddenUI") or Instance.new("Folder", CoreGui)
 HiddenUI.Name = "HiddenUI"
+HiddenUI.Parent = CoreGui
+
+
 
 local GuiName = "UI_" .. tostring(math.random(1000,9999))
 local ScreenGui = Instance.new("ScreenGui", HiddenUI)
+ScreenGui.Enabled = true
+
 ScreenGui.Name = GuiName
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
