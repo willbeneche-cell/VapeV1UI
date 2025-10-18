@@ -3,6 +3,14 @@ local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local secondaryFrames = {}
 
+-- en haut du fichier
+local function CreateTabFrame(...) ... end
+local function CreateToggle(...) ... end
+local function CreateDropdownToggle(...) ... end
+
+
+
+
 
 
 local HiddenUI = CoreGui:FindFirstChild("HiddenUI") or Instance.new("Folder", CoreGui)
@@ -700,5 +708,6 @@ return {
     CreateTabFrame = CreateTabFrame,
     CreateToggle = CreateToggle,
     CreateDropdownToggle = CreateDropdownToggle,
-    
+    CreateSlider = CreateSlider,
 }
+
