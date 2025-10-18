@@ -700,10 +700,6 @@ end)
 
 
 
-
-
-UpdateCombatHeight()
-
 return {
     CreateTabFrame = CreateTabFrame,
     CreateToggle = CreateToggle,
