@@ -1,0 +1,704 @@
+local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
+local secondaryFrames = {}
+
+
+
+local HiddenUI = CoreGui:FindFirstChild("HiddenUI") or Instance.new("Folder", CoreGui)
+HiddenUI.Name = "HiddenUI"
+
+local GuiName = "UI_" .. tostring(math.random(1000,9999))
+local ScreenGui = Instance.new("ScreenGui", HiddenUI)
+ScreenGui.Name = GuiName
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+ScreenGui.IgnoreGuiInset = true
+
+-- Flou
+local blur = Lighting:FindFirstChild("CombatBlur") or Instance.new("BlurEffect", Lighting)
+blur.Name = "CombatBlur"
+blur.Size = 4
+
+-- Fond sombre
+local darken = Instance.new("Frame", ScreenGui)
+darken.Size = UDim2.new(1, 0, 1, 0)
+darken.Position = UDim2.new(0, 0, 0, 0)
+darken.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+darken.BackgroundTransparency = 0.6
+darken.BorderSizePixel = 0
+darken.ZIndex = 0
+
+-- MainFrame
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 220, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -110, 0.5, -160)
+MainFrame.BackgroundColor3 = Color3.fromRGB(60, 0, 100)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+
+-- LogoZone
+local LogoZone = Instance.new("Frame", MainFrame)
+LogoZone.Size = UDim2.new(1, 0, 0, 50)
+LogoZone.BackgroundColor3 = Color3.fromRGB(40, 0, 80)
+LogoZone.BorderSizePixel = 0
+Instance.new("UICorner", LogoZone).CornerRadius = UDim.new(0, 10)
+
+local logoLayout = Instance.new("UIListLayout", LogoZone)
+logoLayout.FillDirection = Enum.FillDirection.Horizontal
+logoLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+logoLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+logoLayout.Padding = UDim.new(0, 12)
+
+local Logo1 = Instance.new("ImageLabel", LogoZone)
+Logo1.Size = UDim2.new(0, 36, 0, 20)
+Logo1.BackgroundTransparency = 1
+Logo1.Image = "rbxassetid://14368358200"
+Logo1.ScaleType = Enum.ScaleType.Fit
+Logo1.ImageRectSize = Vector2.new(0, 0) -- facultatif
+Logo1.ImageRectOffset = Vector2.new(0, 0)
+
+
+
+
+local Logo2 = Instance.new("ImageLabel", LogoZone)
+Logo2.Size = UDim2.new(0, 36, 0, 20)
+Logo2.BackgroundTransparency = 1
+Logo2.Image = "rbxassetid://14368357095"
+Logo2.ScaleType = Enum.ScaleType.Fit
+Logo2.ImageRectSize = Vector2.new(0, 0)
+Logo2.ImageRectOffset = Vector2.new(0, 0)
+
+-- Bouton minimiser
+local toggleIcon = Instance.new("ImageButton", LogoZone)
+toggleIcon.Size = UDim2.new(0, 10, 0, 10)
+toggleIcon.BackgroundTransparency = 1
+toggleIcon.Image = "rbxassetid://14368353032"
+toggleIcon.ScaleType = Enum.ScaleType.Fit
+toggleIcon.LayoutOrder = 100
+
+local minimized = false
+local originalSize = MainFrame.Size
+local minimizedSize = UDim2.new(0, 220, 0, 60)
+
+-- TabContainer
+local TabContainer = Instance.new("Frame", MainFrame)
+TabContainer.Name = "TabContainer"
+TabContainer.Size = UDim2.new(1, -20, 1, -110)
+TabContainer.Position = UDim2.new(0, 10, 0, 60)
+TabContainer.BackgroundTransparency = 1
+TabContainer.Visible = true
+
+local layout = Instance.new("UIListLayout", TabContainer)
+layout.FillDirection = Enum.FillDirection.Vertical
+layout.Padding = UDim.new(0, 8)
+
+local function UpdateMainFrameHeight()
+    task.defer(function()
+        local totalHeight = 50 -- hauteur du LogoZone
+        for _, child in ipairs(TabContainer:GetChildren()) do
+            if child:IsA("GuiObject") and child.Visible then
+                totalHeight += child.AbsoluteSize.Y + layout.Padding.Offset
+            end
+        end
+        MainFrame:TweenSize(
+            UDim2.new(0, 220, 0, totalHeight + 20),
+            Enum.EasingDirection.Out,
+            Enum.EasingStyle.Quad,
+            0.25,
+            true
+        )
+    end)
+end
+
+
+
+local tabOffset = 130
+
+function CreateTabFrame(title, iconId)
+    local frame = Instance.new("Frame", ScreenGui)
+    frame.Name = title .. "Frame"
+    frame.Size = UDim2.new(0, 220, 0, 320)
+    frame.Position = UDim2.new(0.5, tabOffset, 0.5, -160)
+    tabOffset += 240
+    frame.BackgroundColor3 = Color3.fromRGB(60, 0, 100)
+    frame.BorderSizePixel = 0
+    frame.Visible = false
+    frame.Active = true
+    frame.Draggable = true
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+    table.insert(secondaryFrames, frame)
+
+    -- LogoZone
+    local logoZone = Instance.new("Frame", frame)
+    logoZone.Size = UDim2.new(1, 0, 0, 50)
+    logoZone.BackgroundColor3 = Color3.fromRGB(40, 0, 80)
+    logoZone.BorderSizePixel = 0
+    Instance.new("UICorner", logoZone).CornerRadius = UDim.new(0, 10)
+    local logoLayout = Instance.new("UIListLayout", logoZone)
+logoLayout.FillDirection = Enum.FillDirection.Horizontal
+logoLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+logoLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+logoLayout.Padding = UDim.new(0, 12)
+logoZone.ClipsDescendants = true
+
+
+
+
+
+    -- Zone pour les éléments dynamiques (toggles, sliders, etc.)
+local contentContainer = Instance.new("Frame", frame)
+contentContainer.Name = "ContentContainer"
+contentContainer.Size = UDim2.new(1, 0, 1, -60)
+contentContainer.Position = UDim2.new(0, 0, 0, 50)
+contentContainer.BackgroundTransparency = 1
+
+local contentLayout = Instance.new("UIListLayout", contentContainer)
+contentLayout.FillDirection = Enum.FillDirection.Vertical
+contentLayout.Padding = UDim.new(0, 6)
+contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+local padding = Instance.new("UIPadding", contentContainer)
+padding.PaddingLeft = UDim.new(0, 10)
+padding.PaddingRight = UDim.new(0, 10)
+padding.PaddingTop = UDim.new(0, 6)
+padding.PaddingBottom = UDim.new(0, 6)
+
+
+
+    local layout = Instance.new("UIListLayout", logoZone)
+    layout.FillDirection = Enum.FillDirection.Horizontal
+    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    layout.VerticalAlignment = Enum.VerticalAlignment.Center
+    layout.Padding = UDim.new(0, 6)
+
+    local function UpdateFrameHeight()
+    task.defer(function()
+        local totalHeight = 50 -- hauteur du logoZone
+
+        local function accumulateHeight(parent)
+            for _, child in ipairs(parent:GetChildren()) do
+                if child:IsA("GuiObject") and child.Visible then
+                    totalHeight += child.AbsoluteSize.Y + contentLayout.Padding.Offset
+                    accumulateHeight(child) -- ✅ récursif
+                end
+            end
+        end
+
+        accumulateHeight(contentContainer)
+
+        frame:TweenSize(
+            UDim2.new(0, 220, 0, totalHeight + 20),
+            Enum.EasingDirection.Out,
+            Enum.EasingStyle.Quad,
+            0.25,
+            true
+        )
+    end)
+end
+
+
+
+    local icon = Instance.new("ImageLabel", logoZone)
+    icon.Size = UDim2.new(0, 18, 0, 18)
+    icon.BackgroundTransparency = 1
+    icon.Image = iconId
+
+    local label = Instance.new("TextLabel", logoZone)
+    label.Size = UDim2.new(0, 140, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = title
+    label.Font = Enum.Font.ArialBold
+    label.TextSize = 16
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local toggle = Instance.new("ImageButton", logoZone)
+    toggle.Size = UDim2.new(0, 10, 0, 10)
+    toggle.BackgroundTransparency = 1
+    toggle.Image = "rbxassetid://14368353032"
+    toggle.LayoutOrder = 100
+
+    local minimized = false
+    local originalSize = frame.Size
+    local minimizedSize = UDim2.new(0, 220, 0, 60)
+
+    toggle.MouseButton1Click:Connect(function()
+        minimized = not minimized
+        toggle.Image = minimized and "rbxassetid://14368317595" or "rbxassetid://14368353032"
+        frame:TweenSize(minimized and minimizedSize or originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.25, true)
+    end)
+
+    -- Tab bouton dans MainFrame
+    local tabButton = Instance.new("TextButton", TabContainer)
+    local tabLayout = Instance.new("UIListLayout", tabButton)
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+tabLayout.Padding = UDim.new(0, 12)
+
+    tabButton.Size = UDim2.new(1, 0, 0, 36)
+    tabButton.BackgroundColor3 = Color3.fromRGB(60, 0, 100)
+    tabButton.BorderSizePixel = 0
+    tabButton.AutoButtonColor = false
+    tabButton.Text = ""
+    tabButton.ClipsDescendants = true
+    Instance.new("UICorner", tabButton).CornerRadius = UDim.new(0, 10)
+
+    local tabIcon = Instance.new("ImageLabel", tabButton)
+    tabIcon.Size = UDim2.new(0, 18, 0, 18)
+    tabIcon.Position = UDim2.new(0, 4, 0.5, -14)
+    tabIcon.BackgroundTransparency = 1
+    tabIcon.Image = iconId
+
+    local tabLabel = Instance.new("TextLabel", tabButton)
+    tabLabel.Size = UDim2.new(1, -40, 1, 0)
+    tabLabel.Position = UDim2.new(0, 40, 0, 0)
+    tabLabel.BackgroundTransparency = 1
+    tabLabel.Text = title
+    tabLabel.Font = Enum.Font.ArialBold
+    tabLabel.TextSize = 13
+    tabLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    tabLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    tabButton.MouseButton1Click:Connect(function()
+        frame.Visible = not frame.Visible
+        local active = frame.Visible
+        tabButton.BackgroundColor3 = active and Color3.fromRGB(40, 0, 80) or Color3.fromRGB(60, 0, 100)
+        tabLabel.TextColor3 = active and Color3.fromRGB(255, 0, 255) or Color3.fromRGB(255, 255, 255)
+    end)
+
+    UpdateMainFrameHeight()
+
+    return frame, contentContainer, UpdateFrameHeight
+
+
+end
+
+
+local savedFlags = {} -- Pour la logique de sauvegarde future
+
+function CreateToggle(parentFrame, args, onResize)
+    local text = args.Text or "Toggle"
+    local flag = args.Flag or "Unnamed_Toggle"
+    local default = args.Default or false
+    local callback = args.Callback or function() end
+
+    savedFlags[flag] = default
+
+    local toggle = Instance.new("TextButton")
+    toggle.Name = flag
+    toggle.Parent = parentFrame
+   toggle.Size = UDim2.new(1, 0, 0, 32)
+toggle.Position = UDim2.new(0, 0, 0, 0)
+
+  
+
+    toggle.BorderSizePixel = 0
+    toggle.Text = text
+    toggle.Font = Enum.Font.Gotham
+    toggle.TextSize = 13
+    toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggle.TextXAlignment = Enum.TextXAlignment.Center
+    Instance.new("UICorner", toggle).CornerRadius = UDim.new(0, 8)
+
+    local state = default
+
+    -- 🔍 Détection ascendante : est-ce qu'on est dans un dropdownFrame ?
+local isDropdown = false
+local current = parentFrame
+while current do
+    if current.Name == "dropdownFrame" then
+        isDropdown = true
+        break
+    end
+    current = current.Parent
+end
+
+if isDropdown then
+    toggle.BackgroundTransparency = 1
+    toggle.BackgroundColor3 = Color3.new(0, 0, 0)
+else
+    toggle.BackgroundTransparency = 0
+    toggle.BackgroundColor3 = default and Color3.fromRGB(80, 0, 130) or Color3.fromRGB(50, 0, 90)
+end
+
+
+    local function updateVisual()
+        local goal = {}
+        goal.BackgroundColor3 = state and Color3.fromRGB(80, 0, 130) or Color3.fromRGB(50, 0, 90)
+        game:GetService("TweenService"):Create(toggle, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), goal):Play()
+    end
+
+    toggle.MouseButton1Click:Connect(function()
+        state = not state
+        savedFlags[flag] = state
+        updateVisual()
+        callback(state)
+    end)
+
+    -- Initial visual + callback
+    updateVisual()
+    callback(state)
+    if onResize then
+    task.defer(onResize)
+end
+
+end
+
+
+function CreateDropdownToggle(parentFrame, args, onResize)
+    local text = args.Text or "DropdownToggle"
+    local flag = args.Flag or "Unnamed_Dropdown"
+    local default = args.Default or false
+    local callback = args.Callback or function() end
+
+    savedFlags[flag] = default
+
+    -- Container principal
+    local container = Instance.new("Frame", parentFrame)
+    container.Size = UDim2.new(1, 0, 0, 32)
+    container.BackgroundTransparency = 1
+
+    local layout = Instance.new("UIListLayout", container)
+    layout.FillDirection = Enum.FillDirection.Vertical
+    layout.Padding = UDim.new(0, 6)
+
+    -- Toggle principal
+    local mainToggle = Instance.new("TextButton", container)
+    mainToggle.Name = flag
+    mainToggle.Size = UDim2.new(1, 0, 0, 32)
+    mainToggle.BackgroundColor3 = default and Color3.fromRGB(80, 0, 130) or Color3.fromRGB(50, 0, 90)
+    mainToggle.BorderSizePixel = 0
+    mainToggle.Text = text
+    mainToggle.Font = Enum.Font.Gotham
+    mainToggle.TextSize = 13
+    mainToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    mainToggle.TextXAlignment = Enum.TextXAlignment.Center
+    Instance.new("UICorner", mainToggle).CornerRadius = UDim.new(0, 8)
+
+    local state = default
+    local dropdownVisible = false
+
+    -- Dropdown zone
+    local dropdownFrame = Instance.new("Frame", container)
+    dropdownFrame.Name = "dropdownFrame"
+    dropdownFrame.Size = UDim2.new(1, 0, 0, 0)
+    dropdownFrame.BackgroundTransparency = 1
+    dropdownFrame.ClipsDescendants = true
+
+    local dropdownLayout = Instance.new("UIListLayout", dropdownFrame)
+    dropdownLayout.FillDirection = Enum.FillDirection.Vertical
+    dropdownLayout.Padding = UDim.new(0, 4)
+
+    local function updateVisual()
+        local goal = {}
+        goal.BackgroundColor3 = state and Color3.fromRGB(80, 0, 130) or Color3.fromRGB(50, 0, 90)
+        game:GetService("TweenService"):Create(mainToggle, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), goal):Play()
+    end
+
+ local function updateDropdownSize()
+    local targetHeight = dropdownVisible and dropdownLayout.AbsoluteContentSize.Y or 0
+    game:GetService("TweenService"):Create(dropdownFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = UDim2.new(1, 0, 0, targetHeight)
+    }):Play()
+
+    if onResize then
+        task.delay(0.3, onResize)
+    end
+end
+
+
+
+    mainToggle.MouseButton1Click:Connect(function()
+        state = not state
+        savedFlags[flag] = state
+        updateVisual()
+        callback(state)
+    end)
+
+  mainToggle.MouseButton2Click:Connect(function()
+    dropdownVisible = not dropdownVisible
+    updateDropdownSize()
+end)
+
+
+    updateVisual()
+    callback(state)
+
+    return dropdownFrame
+end
+
+
+function CreateSlider(parentFrame, args)
+    local text = args.Text or "Slider"
+    local flag = args.Flag or "Unnamed_Slider"
+    local default = args.Default or 0
+    local min = args.Min or 0
+    local max = args.Max or 100
+    local rounding = args.Rounding or 0
+    local callback = args.Callback or function() end
+
+    savedFlags[flag] = default
+
+    -- 🔍 Détection ascendante : est-ce qu'on est dans un dropdownFrame ?
+    local isDropdown = false
+    local current = parentFrame
+    while current do
+        if current.Name == "dropdownFrame" then
+            isDropdown = true
+            break
+        end
+        current = current.Parent
+    end
+
+    -- Container
+    local container = Instance.new("Frame", parentFrame)
+    container.Size = UDim2.new(1, 0, 0, 36)
+    container.BackgroundTransparency = 1
+
+    local label = Instance.new("TextLabel", container)
+    label.Size = UDim2.new(1, 0, 0, 14)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text .. ": " .. tostring(default)
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 13
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    -- Slider bar
+    local bar = Instance.new("Frame", container)
+    bar.Size = UDim2.new(1, 0, 0, 14)
+    bar.Position = UDim2.new(0, 0, 0, 20)
+    bar.BackgroundColor3 = Color3.fromRGB(80, 0, 130)
+    bar.BorderSizePixel = 0
+    bar.Name = "SliderBar"
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 6)
+
+    -- Handle
+    local handle = Instance.new("ImageButton", bar)
+    handle.Size = UDim2.new(0, 12, 0, 12)
+    handle.BackgroundTransparency = 1
+    handle.Image = "rbxassetid://14368342301"
+    handle.AnchorPoint = Vector2.new(0.5, 0.5)
+    handle.Position = UDim2.new((default - min) / (max - min), 0, 0.5, 0)
+    handle.AutoButtonColor = false
+    handle.Name = "SliderHandle"
+    handle.ZIndex = 2
+
+    local dragging = false
+
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+        end
+    end)
+
+    handle.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local relX = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+            local value = math.floor((min + (max - min) * relX) * 10^rounding) / 10^rounding
+            handle.Position = UDim2.new(relX, 0, 0.5, 0)
+            label.Text = text .. ": " .. tostring(value)
+            savedFlags[flag] = value
+            callback(value)
+        end
+    end)
+end
+
+
+-- Keybind (placé à la fin du TabContainer)
+local currentKeybind = Enum.KeyCode.RightShift
+local waitingForKey = false
+
+local KeybindButton = Instance.new("TextButton", TabContainer)
+KeybindButton.Size = UDim2.new(1, 0, 0, 36)
+KeybindButton.BackgroundColor3 = Color3.fromRGB(50, 0, 90)
+KeybindButton.BorderSizePixel = 0
+KeybindButton.Text = "MENU KEYBIND : " .. currentKeybind.Name
+KeybindButton.Font = Enum.Font.Gotham
+KeybindButton.TextSize = 13
+KeybindButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeybindButton.TextXAlignment = Enum.TextXAlignment.Center
+KeybindButton.ZIndex = 2
+Instance.new("UICorner", KeybindButton).CornerRadius = UDim.new(0, 10)
+
+local keybindStroke = Instance.new("UIStroke", KeybindButton)
+keybindStroke.Color = Color3.fromRGB(80, 0, 130)
+keybindStroke.Thickness = 1.2
+
+KeybindButton.MouseButton1Click:Connect(function()
+    if not waitingForKey then
+        waitingForKey = true
+        KeybindButton.Text = "PRESS A KEY..."
+    end
+end)
+
+-- Toggle GUI
+local guiVisible = true
+
+local function setGuiState(state)
+    guiVisible = state
+    MainFrame.Visible = state
+    darken.Visible = state
+    blur.Enabled = state
+
+    for _, frame in ipairs(secondaryFrames) do
+        frame.Visible = state
+    end
+end
+
+
+setGuiState(true)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+
+    if waitingForKey then
+        currentKeybind = input.KeyCode
+        KeybindButton.Text = "MENU KEYBIND : " .. currentKeybind.Name
+        waitingForKey = false
+        return
+    end
+
+    if input.KeyCode == currentKeybind then
+        setGuiState(not guiVisible)
+    end
+end)
+
+
+toggleIcon.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    toggleIcon.Image = minimized and "rbxassetid://14368317595" or "rbxassetid://14368353032"
+    MainFrame:TweenSize(minimized and minimizedSize or originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.25, true)
+    TabContainer.Visible = not minimized
+end)
+
+
+
+-- COMMANDE POUR LES TABS
+
+
+--local ExempleFrame, Exemple, UpdateCombatHeight = CreateTabFrame("Exemple", "rbxassetid://14368359107")
+
+
+--local CombatFrame, Combat, UpdateCombatHeight = CreateTabFrame("Combat", "rbxassetid://14368312652")
+--local RenderFrame, Render, UpdateCombatHeight = CreateTabFrame("Render", "rbxassetid://14368350193")
+--local UtilityFrame, Utility, UpdateCombatHeight = CreateTabFrame("Utility", "rbxassetid://14368359107")
+--local WorldFrame, World, UpdateCombatHeight = CreateTabFrame("World", "rbxassetid://14368362492")
+
+
+
+--COMMANDE POUR LES TOGGLES
+
+
+--CreateToggle(Combat, {
+   --Text = "Auto Kill",
+   -- Flag = "AutoKill",
+   -- Default = false,
+    --Callback = function(state)
+      -- print("AutoKill is", state)
+-- end
+--})
+
+
+--DROPDOWN TOGGLE 
+
+-- COMMANDE POUR DIRE QUI ON CREE UN TOGGLE QUI QUAND ON CLIQUE SUR LE CLIQUE DROIT DEROULE UN SOUS MENU QUI PERMET DE CLIQUER SUR
+--DES BOUTONS OU ALORS DES SOUS TOGGLES 
+
+    --Text = "ESP",
+    --Flag = "ToggleDropdown_ESP",
+    --Default = false,
+    --DROPDOWN = "Toggle", "Button" <---- Pour dire ce qui aura dans le menu déroulant du toggle
+    --Callback = function(state)
+        --print("ESP Toggle is", state)
+    --DROPTOGGLE CALLBACK =
+        --CreateToggle(ToggleDropdown_ESP, {
+   --Text = "ESP 3D Boxes",
+   -- Flag = "ESP3DBoxes",
+   -- Default = false,
+    --Callback = function(state)
+      -- EXEMPLE
+-- end
+--})
+    --DROPBUTTON CALLBACK
+    --DROPSLIDER CALLBACK
+--end
+
+--local myFrame, espcontent, UpdateCombatHeight = CreateTabFrame("ESP", "rbxassetid://14368359107")
+
+
+--CreateToggle(espcontent, {
+   -- Text = "FOV",
+    --Flag = "ESPFOV",
+   -- Default = false,
+    --Callback = function(state)
+       -- print("FOV is", state)
+   -- end
+--})
+
+
+--local espdropdown = CreateDropdownToggle(espcontent, {
+   -- Text = "ESP",
+   -- Flag = "ToggleDropdown_ESP",
+  -- Default = false,
+   -- DROPDOWN = "Toggle",
+   -- Callback = function(state)    
+      --  print("ESP Toggle is", state)
+   -- end
+--})
+
+
+
+--CreateToggle(espdropdown, {
+  -- Text = "ESP 3D Boxes",
+  --  Flag = "ESP3DBoxes",
+   -- Default = false,
+  --  Callback = function(state)
+   --     print("ESP 3D Boxes is", state)
+   -- end
+--})
+
+
+
+
+
+
+
+-- COMMANDE POUR LES SLIDERS
+
+--CreateSlider(Exemple, {
+   -- Text = "Speed",
+  -- Flag = "FOV_Slider",
+  --  Default = 16,
+   --Min = 0,
+   --Max = 100,
+    --Rounding = 0,
+    --Callback = function(value)
+       --print("Speed set to", value)
+   -- end
+--})
+
+
+
+
+
+UpdateCombatHeight()
+
+return {
+    CreateTabFrame = CreateTabFrame,
+    CreateToggle = CreateToggle,
+    CreateDropdownToggle = CreateDropdownToggle,
+    
+}
